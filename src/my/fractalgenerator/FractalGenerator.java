@@ -33,12 +33,12 @@ import javax.swing.filechooser.FileSystemView;
  *
  * @author cameronterry
  */
-public class FractalGeneratorUI extends javax.swing.JFrame {
+public class FractalGenerator extends javax.swing.JFrame {
 
     /**
      * Creates new form FractalGeneratorUI
      */
-    public FractalGeneratorUI() {
+    public FractalGenerator() {
         // the transformed used: T(x, y) -> (x', y')
         // where x' = ax + by + d and y' = cx + ey + f
         this.NUM_PARAMS = 7;
@@ -109,6 +109,11 @@ public class FractalGeneratorUI extends javax.swing.JFrame {
             }
         });
 
+        equationsList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                equationsListMouseClicked(evt);
+            }
+        });
         equationScrollPane.setViewportView(equationsList);
 
         transformationLabel.setText("Transformation:");
@@ -269,7 +274,13 @@ public class FractalGeneratorUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
     DefaultListModel dim = new DefaultListModel();
     private void editButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editButtonActionPerformed
-        // TODO add your handling code here:
+        int index = equationsList.getSelectedIndex();
+        String new_val = JOptionPane.showInputDialog(this, "Enter a new set of values:", equationsList.getModel().getElementAt(index));
+
+        if (new_val != null) {
+            parseFunctions(new String[]{new_val});
+            dim.setElementAt(new_val, index);
+        }
     }//GEN-LAST:event_editButtonActionPerformed
     
     private void addButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addButtonActionPerformed
@@ -304,7 +315,12 @@ public class FractalGeneratorUI extends javax.swing.JFrame {
 
     private void removeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeButtonActionPerformed
         int index = equationsList.getSelectedIndex();
-        dim.remove(index);
+        
+        try {
+            dim.remove(index);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            
+        }
         
         int size = dim.getSize();
         
@@ -326,25 +342,35 @@ public class FractalGeneratorUI extends javax.swing.JFrame {
 
     // TODO: fix the parse functions method
     private void randomEqnsButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_randomEqnsButtonActionPerformed
+        int MAX_EQS = 4;
+        
         dim.removeAllElements();
-        equationsList.removeAll();
+        equationsList.removeAll();  
         
         Random r = new Random();
-        int num_eqs = 2;
+        int num_eqs = r.nextInt((MAX_EQS - 2) + 1) + 2; // random number between 2 and MAX_EQS
         
         float[][] gen_params = new float[num_eqs][NUM_PARAMS];
-        gen_params[0] = new float[NUM_PARAMS];
-        gen_params[1] = new float[NUM_PARAMS];
+        
+        int i = 0;
+        float p = 1.0f;
+        float p_range = 0.30f; // range from which random probilities can take
+        float p_offset = 0.10f;
         
         for (float[] gen_param : gen_params) {
             for (int j = 0; j < NUM_PARAMS - 1; j++) {
+                // generate numbers between -1 and 1
                 gen_param[j] = (float) (Math.round((r.nextFloat() * 2 - 1) * 100.0)/100.0);
             }
+            i++;
+            if (i <= num_eqs - 1) {
+                gen_params[i - 1][NUM_PARAMS - 1] = (float) (Math.round((r.nextFloat() * p_range + p_offset) * 100.0)/100.0);
+                p -= gen_params[i - 1][NUM_PARAMS - 1];
+            } else {
+                // in case the p_range/p_offset values return give a negative p
+                gen_params[i - 1][NUM_PARAMS - 1] = (p >= 0.0f) ? (float) (Math.round(p * 100.0) / 100.0) : 0.0f;
+            }
         }
-        
-        gen_params[0][NUM_PARAMS - 1] = (float) (Math.round(r.nextFloat() * 100.0)/100.0);
-        gen_params[1][NUM_PARAMS - 1] = (float) (Math.round((1.0 - (double) gen_params[0][NUM_PARAMS - 1]) * 100.0)/100.0);
-        
         
         String[] eqns = new String[num_eqs];
         
@@ -397,7 +423,9 @@ public class FractalGeneratorUI extends javax.swing.JFrame {
                 } else {
                     index++;
                 }
-
+                
+                dim.removeAllElements();
+                
                 for (int k = 0; k < unscraped_eqns.length; k++) {
                     String withoutBrackets = unscraped_eqns[k].substring(1, unscraped_eqns[k].length() - 1);
                     unscraped_eqns[k] = withoutBrackets.replaceAll(",", "");
@@ -439,7 +467,7 @@ public class FractalGeneratorUI extends javax.swing.JFrame {
                     }
                 }
             } catch (IOException ex) {
-                Logger.getLogger(FractalGeneratorUI.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(FractalGenerator.class.getName()).log(Level.SEVERE, null, ex);
             }
 }
     }//GEN-LAST:event_saveMenuItemActionPerformed
@@ -462,12 +490,24 @@ public class FractalGeneratorUI extends javax.swing.JFrame {
             try {
                 ImageIO.write(bi, "png", output_file);
             } catch (IOException ex) {
-                Logger.getLogger(FractalGeneratorUI.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(FractalGenerator.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         
         
     }//GEN-LAST:event_saveImgMenuItemActionPerformed
+
+    private void equationsListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_equationsListMouseClicked
+        if (evt.getClickCount() == 2) {
+            int index = equationsList.locationToIndex(evt.getPoint());
+            String new_val = JOptionPane.showInputDialog(this, "Enter a new set of values:", equationsList.getModel().getElementAt(index));
+            
+            if (new_val != null) {
+                parseFunctions(new String[] {new_val});
+                dim.setElementAt(new_val, index);
+            }
+        }
+    }//GEN-LAST:event_equationsListMouseClicked
 
     /**
      * @param args the command line arguments
@@ -486,20 +526,21 @@ public class FractalGeneratorUI extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(FractalGeneratorUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(FractalGenerator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(FractalGeneratorUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(FractalGenerator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(FractalGeneratorUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(FractalGenerator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(FractalGeneratorUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(FractalGenerator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new FractalGeneratorUI().setVisible(true);
+                new FractalGenerator().setVisible(true);
             }
         });
     }
